@@ -1,0 +1,129 @@
+#include <stdio.h>
+
+#define MAX_FLOORS 10
+#define MAX_CAPACITY 4
+/*
+请输入乘客数量(即同时按下的请求数)：4
+请依次输入每位乘客的起始楼层A和目标楼层B（1-10），空格隔开：A B
+乘客 1：1 10
+乘客 2：6 2
+乘客 3：3 8
+乘客 4：5 9
+当前时间        当前层号        电梯内人数      候梯人数
+0               1               1               3
+2               3               2               2
+4               5               3               1
+5               6               4               0
+7               8               3               0
+8               9               2               0
+9               10              1               0
+17              2               0               0
+*/
+
+
+//乘客信息
+typedef struct {
+	int startFloor;
+	int destinationFloor;
+} Passenger;
+//候梯队列
+Passenger passengersInWait[10];
+int numPassengersInWait = 0;
+//在梯队列
+Passenger passengersinElevator[MAX_CAPACITY];
+int numPassengersinElevator = 0;
+//电梯运行累计时间
+int elapsedTime = 0;
+//当前电梯所在层号，初始状态电梯停靠在一楼
+int currentFloor = 1;
+//电梯运行方向，1表示向上，-1表示向下
+int direction = 1;
+
+int elevatorfloor;
+
+int main() {
+
+	//输入获取初始化信息
+	printf("请输入乘客数量(即同时按下的请求数)：");
+	scanf("%d", &numPassengersInWait);
+
+	printf("请依次输入每位乘客的起始楼层A和目标楼层B（1-10），空格隔开：A B\n");
+	for (int i = 0; i < numPassengersInWait; i++) {
+		printf("乘客 %d：", i + 1);
+		scanf("%d %d", &passengersInWait[i].startFloor, &passengersInWait[i].destinationFloor);
+	}
+
+	printf("请输入电梯起始楼层：");
+	scanf("%d", &elevatorfloor);
+	currentFloor = elevatorfloor;
+
+	printf("当前时间\t当前层号\t电梯内人数\t候梯人数\n");
+	printf("%d\t\t%d\t\t%d\t\t%d\n", elapsedTime, currentFloor, 0, numPassengersInWait);
+
+	while (numPassengersInWait > 0 || numPassengersinElevator > 0) {
+		//出入梯标识
+		int inOutFlag = 0;
+		//是否变更运行方向标识
+		int changeDirection = 0;
+
+		// 先下后上，检查是否有乘客在电梯内到达目的楼层
+		for (int i = 0; i < numPassengersinElevator; i++) {
+			//检查每个乘客目标楼层与当前方向是否一致
+			changeDirection =  direction * (passengersinElevator[i].destinationFloor - currentFloor)  > 0 ? changeDirection + 1 :
+			                   changeDirection ;
+			if (passengersinElevator[i].destinationFloor == currentFloor) {
+				//乘客出梯
+				for (int j = i; j < numPassengersinElevator - 1; j++) {
+					passengersinElevator[j] = passengersinElevator[j + 1];
+				}
+				numPassengersinElevator--;
+				inOutFlag++;
+				//对应队列变动
+				i--;
+			}
+
+		}
+
+		// 检查是否有乘客在当前楼层等待电梯
+		for (int i = 0; i < numPassengersInWait && numPassengersinElevator < MAX_CAPACITY; i++) {
+			//检查乘客等待楼层与当前方向是否一致
+			changeDirection =  direction * (passengersInWait[i].startFloor - currentFloor)  > 0 ? changeDirection + 1 :
+			                   changeDirection  ;
+			if (passengersInWait[i].startFloor == currentFloor) {
+				//乘客入梯
+				changeDirection =  direction * (passengersInWait[i].destinationFloor - currentFloor)  > 0 ? changeDirection + 1 :
+				                   changeDirection  ;
+				Passenger temp = passengersInWait[i];
+				for (int j = i; j < numPassengersInWait - 1; j++) {
+					passengersInWait[j] = passengersInWait[j + 1];
+				}
+				passengersinElevator[numPassengersinElevator] = temp;
+				numPassengersInWait--;
+				numPassengersinElevator++;
+				inOutFlag++;
+				//对应队列变动
+				i--;
+			}
+		}
+		//逐层打印记录
+		if (inOutFlag > 0)
+			printf("%d\t\t%d\t\t%d\t\t%d\n", elapsedTime, currentFloor, numPassengersinElevator, numPassengersInWait);
+
+		//确定方向(扫描调度，到头折返或者全部为统一方向时折返)
+		if (changeDirection == 0) {
+			direction = -direction;
+		}
+		if (currentFloor == 1) {
+			direction = 1;
+		}
+		if (currentFloor == MAX_FLOORS) {
+			direction = -1;
+		}
+
+		// 更新电梯楼层和时间
+		currentFloor += direction;
+		elapsedTime++;
+	}
+
+	return 0;
+}
