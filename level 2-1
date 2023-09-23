@@ -106,8 +106,8 @@ int main() {
 			}
 			// 更新电梯楼层和时间
 			currentFloor += direction;
-			elapsedTime++;
 		}
+                         elapsedTime++;
 	}
 
 	return 0;
